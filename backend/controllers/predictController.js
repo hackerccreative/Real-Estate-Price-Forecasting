@@ -20,8 +20,11 @@ exports.predict = (req, res) => {
     // ml is at root/ml
     const scriptPath = path.join(__dirname, '..', '..', 'ml', 'predict.py');
     
-    // Use system Python (works on both Windows and Linux/Render)
-    const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+    // Use .venv Python if available (local dev), otherwise system Python (production)
+    const venvPythonPath = path.join(__dirname, '..', '..', '.venv', 'Scripts', 'python.exe');
+    const pythonCommand = require('fs').existsSync(venvPythonPath) 
+        ? venvPythonPath 
+        : (process.platform === 'win32' ? 'python' : 'python3');
 
     // Spawn Python process
     const pythonProcess = spawn(pythonCommand, [scriptPath, JSON.stringify(inputData)]);
