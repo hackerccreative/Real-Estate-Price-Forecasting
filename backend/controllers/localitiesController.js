@@ -7,7 +7,10 @@ exports.getLocalities = (req, res) => {
     };
 
     const scriptPath = path.join(__dirname, '..', '..', 'ml', 'predict.py');
-    const pythonProcess = spawn('python', [scriptPath, JSON.stringify(inputData)]);
+    
+    // Use system Python (works on both Windows and Linux/Render)
+    const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+    const pythonProcess = spawn(pythonCommand, [scriptPath, JSON.stringify(inputData)]);
 
     let dataString = '';
     let errorString = '';

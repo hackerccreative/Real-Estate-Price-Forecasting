@@ -1,4 +1,16 @@
-scikit-learn
-pandas
-joblib
-numpy
+# Core ML and Data Science Libraries
+scikit-learn==1.3.2
+pandas==2.1.4
+numpy==1.26.2
+joblib==1.3.2
+
+# FastAPI and Server Dependencies (if using Python backend)
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.5.3
+
+# CORS and Additional Web Support
+python-multipart==0.0.6
+
+# For deployment stability
+gunicorn==21.2.0

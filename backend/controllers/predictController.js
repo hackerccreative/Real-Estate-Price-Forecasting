@@ -19,9 +19,12 @@ exports.predict = (req, res) => {
     // backend is at root/backend
     // ml is at root/ml
     const scriptPath = path.join(__dirname, '..', '..', 'ml', 'predict.py');
+    
+    // Use system Python (works on both Windows and Linux/Render)
+    const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
 
     // Spawn Python process
-    const pythonProcess = spawn('python', [scriptPath, JSON.stringify(inputData)]);
+    const pythonProcess = spawn(pythonCommand, [scriptPath, JSON.stringify(inputData)]);
 
     let dataString = '';
     let errorString = '';

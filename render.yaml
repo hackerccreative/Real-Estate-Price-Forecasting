@@ -1,0 +1,23 @@
+# Render Blueprint for Real Estate ML Project
+# This file automates the deployment on Render
+
+services:
+  # Backend Service
+  - type: web
+    name: real-estate-backend
+    runtime: node
+    region: oregon # Change to your preferred region
+    plan: free
+    branch: main # or master
+    rootDir: backend
+    buildCommand: npm install && pip install -r ../ml/requirements.txt
+    startCommand: node server.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        fromService:
+          type: web
+          name: real-estate-backend
+          property: port

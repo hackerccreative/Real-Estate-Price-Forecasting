@@ -2,15 +2,22 @@
 node_modules/
 npm-debug.log*
 yarn.lock
+package-lock.json
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
-*.pkl
+.venv/
+venv/
+*.egg-info/
+
+# ML Models - IMPORTANT: Comment out the next line to include model files in Git
+# *.pkl
 
 # Environment variables
 .env
+.env.local
 
 # Build outputs
 dist/
@@ -25,3 +32,9 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
