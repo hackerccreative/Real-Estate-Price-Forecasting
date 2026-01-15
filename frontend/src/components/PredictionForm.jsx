@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Search, MapPin, Calendar, Loader2 } from 'lucide-react';
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { Search, MapPin, Calendar, Loader2 } from "lucide-react";
 
-const PredictionForm = ({ localities, onPredict, isLoading }) => {
-  const [locality, setLocality] = useState('');
+const PredictionForm = ({
+  localities = [],        // ✅ default to empty array
+  onPredict,
+  isLoading,
+}) => {
+  const [locality, setLocality] = useState("");
   const [baseYear, setBaseYear] = useState(new Date().getFullYear());
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (locality && baseYear) {
-      onPredict({ locality, base_year: parseInt(baseYear) });
-    }
+
+    if (!locality || !baseYear) return;
+
+    onPredict({
+      locality,
+      base_year: parseInt(baseYear, 10),
+    });
   };
 
   return (
@@ -26,12 +34,15 @@ const PredictionForm = ({ localities, onPredict, isLoading }) => {
       </h3>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Locality */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
             Target Locality
           </label>
+
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+
             <select
               value={locality}
               onChange={(e) => setLocality(e.target.value)}
@@ -39,21 +50,34 @@ const PredictionForm = ({ localities, onPredict, isLoading }) => {
               required
             >
               <option value="">Select Location</option>
-              {localities.map((loc) => (
-                <option key={loc} value={loc}>
-                  {loc}
-                </option>
-              ))}
+
+              {/* ✅ SAFE map */}
+              {Array.isArray(localities) &&
+                localities.map((loc) => (
+                  <option key={loc} value={loc}>
+                    {loc}
+                  </option>
+                ))}
             </select>
           </div>
+
+          {/* Optional empty state */}
+          {Array.isArray(localities) && localities.length === 0 && (
+            <p className="text-xs text-slate-500 mt-1">
+              Loading localities…
+            </p>
+          )}
         </div>
 
+        {/* Base Year */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
             Base Year (Start of Forecast)
           </label>
+
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+
             <input
               type="number"
               value={baseYear}
@@ -65,9 +89,13 @@ const PredictionForm = ({ localities, onPredict, isLoading }) => {
               max="2100"
             />
           </div>
-          <p className="text-xs text-slate-500 mt-1">Prediction will cover 5 years starting from this year.</p>
+
+          <p className="text-xs text-slate-500 mt-1">
+            Prediction will cover 5 years starting from this year.
+          </p>
         </div>
 
+        {/* Submit */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -81,7 +109,7 @@ const PredictionForm = ({ localities, onPredict, isLoading }) => {
               Generating Forecast...
             </>
           ) : (
-            'Generate 5-Year Forecast'
+            "Generate 5-Year Forecast"
           )}
         </motion.button>
       </form>
