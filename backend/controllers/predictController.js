@@ -1,61 +1,85 @@
-const { spawn } = require('child_process');
-const path = require('path');
+const { spawn } = require("child_process");
+const path = require("path");
+const fs = require("fs");
 
 exports.predict = (req, res) => {
-    const { locality, model_type, base_year } = req.body;
+  const { locality, model_type, base_year } = req.body;
 
-    if (!locality || !model_type) {
-        return res.status(400).json({ error: 'Missing locality or model_type' });
+  // 1️⃣ Validate input
+  if (!locality || !model_type) {
+    return res.status(400).json({
+      error: "Missing required fields: locality or model_type",
+    });
+  }
+
+  // 2️⃣ Prepare input payload for Python
+  const inputData = {
+    task: "predict",
+    locality,
+    model_type,
+    base_year,
+  };
+
+  // 3️⃣ Absolute path to ML script (repo root aware)
+  // Render runs from repo root
+  const scriptPath = path.join(process.cwd(), "ml", "predict.py");
+
+  // 4️⃣ Decide Python executable
+  // Local dev: use venv if exists
+  // Render/Linux: always python3
+  const localVenvPython = path.join(
+    process.cwd(),
+    ".venv",
+    "Scripts",
+    "python.exe"
+  );
+
+  let pythonCommand = "python3";
+  if (process.platform === "win32" && fs.existsSync(localVenvPython)) {
+    pythonCommand = localVenvPython;
+  }
+
+  // 5️⃣ Spawn Python process
+  const pythonProcess = spawn(pythonCommand, [
+    scriptPath,
+    JSON.stringify(inputData),
+  ]);
+
+  let stdoutData = "";
+  let stderrData = "";
+
+  // 6️⃣ Capture output
+  pythonProcess.stdout.on("data", (data) => {
+    stdoutData += data.toString();
+  });
+
+  pythonProcess.stderr.on("data", (data) => {
+    stderrData += data.toString();
+  });
+
+  // 7️⃣ Handle process end
+  pythonProcess.on("close", (code) => {
+    if (code !== 0) {
+      console.error("❌ Python error:", stderrData);
+      return res.status(500).json({
+        error: "Prediction failed",
+        details: stderrData,
+      });
     }
 
-    const inputData = {
-        task: 'predict',
-        locality,
-        model_type,
-        base_year
-    };
+    try {
+      const result = JSON.parse(stdoutData);
 
-    // Path to the Python script
-    // backend is at root/backend
-    // ml is at root/ml
-    const scriptPath = path.join(__dirname, '..', '..', 'ml', 'predict.py');
-    
-    // Use .venv Python if available (local dev), otherwise system Python (production)
-    const venvPythonPath = path.join(__dirname, '..', '..', '.venv', 'Scripts', 'python.exe');
-    const pythonCommand = require('fs').existsSync(venvPythonPath) 
-        ? venvPythonPath 
-        : (process.platform === 'win32' ? 'python' : 'python3');
+      if (result.error) {
+        return res.status(400).json({ error: result.error });
+      }
 
-    // Spawn Python process
-    const pythonProcess = spawn(pythonCommand, [scriptPath, JSON.stringify(inputData)]);
-
-    let dataString = '';
-    let errorString = '';
-
-    pythonProcess.stdout.on('data', (data) => {
-        dataString += data.toString();
-    });
-
-    pythonProcess.stderr.on('data', (data) => {
-        errorString += data.toString();
-    });
-
-    pythonProcess.on('close', (code) => {
-        if (code !== 0) {
-            console.error(`Python script exited with code ${code}`);
-            console.error(`Stderr: ${errorString}`);
-            return res.status(500).json({ error: 'Prediction failed', details: errorString });
-        }
-
-        try {
-            const result = JSON.parse(dataString);
-            if (result.error) {
-                return res.status(400).json({ error: result.error });
-            }
-            res.json(result);
-        } catch (e) {
-            console.error('Failed to parse Python output:', dataString);
-            res.status(500).json({ error: 'Failed to parse prediction results' });
-        }
-    });
+      return res.json(result);
+    } catch (err) {
+      console.error("❌ JSON parse error:", stdoutData);
+      return res.status(500).json({
+        error: "Invalid response from ML engine",
+      });
+    }
+  });
 };
